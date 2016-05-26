@@ -1,0 +1,57 @@
+var configs = {
+    domains: ["github.com"],
+    scanUrls: ["https://github.com/search?p=1&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
+    helperUrlRegexes: //["https://github.com/search?utf8=%E2%9C%93&q="+keywords],
+  ["https://github\\.com/search\\?p=\\d+&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
+  //scanUrls,
+    contentUrlRegexes: //["https://github\\.com/search\\?p=\\d+&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
+  ["https://github\\.com/\\w+/\\w+/graphs/contributors"],
+  //[""],
+    enableProxy: true,
+    //interval: 5000,
+    fields: [
+        {
+            name: "project_name",
+            selector: "//h1[@class='entry-title public ']/strong/a/@href",
+        required:true
+          //repeated:true
+        },
+        {
+            name: "create_time",
+            selector: "//h3[@class='js-date-range']",
+          required:true
+        },
+       {
+            name: "stars_name",
+            selector: "//div[@class='container repohead-details-container']/ul/li[2]/a[2]",
+            required: true,
+        repeated:true
+        }
+      /*
+       
+       {
+            name: "language_name",
+            selector: "//div[@class='repo-list-stats']",
+            required: true
+        },
+     */
+    ]
+};
+configs.onProcessScanPage = function(url, content, site){  
+  /*var currentPage = parseInt(url.substring(url.indexOf("&p=") + 3));  
+    if(currentPage<65){  
+        //如果没有到最后一页，则将页数加1  
+        var page = currentPage + 1;  
+        var nextUrl = url.replace("&p=" + currentPage, "&p=" + page);  
+        site.addUrl(nextUrl);  
+    }  
+    return true;  */
+  var urls = extractList(content, "//h3[@class='repo-list-name']/a/@href");
+  for (var i = 0; i < urls.length; i++) {
+        site.addUrl(urls[i]+"/graphs/contributors");
+    //alert(urls[i]);
+    }
+  return false;
+}  
+var crawler = new Crawler(configs);
+crawler.start();
