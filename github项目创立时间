@@ -1,31 +1,40 @@
+var scanUrls = [];
+//for(var i=1;i<65;i++){
+for(var i=1;i<2;i++){
+  scanUrls.push("https://github.com/search?p="+i+"&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93");
+}
 var configs = {
     domains: ["github.com"],
-    scanUrls: ["https://github.com/search?p=1&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
-    helperUrlRegexes: //["https://github.com/search?utf8=%E2%9C%93&q="+keywords],
-  ["https://github\\.com/search\\?p=\\d+&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
+    scanUrls:scanUrls, 
+  //["https://github.com/search?p=1&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
+    helperUrlRegexes:["https://github\\.com/search\\?p=\\d+&q=distributed\\+file\\+system&type=Repositories&utf8=%E2%9C%93"],
+   //["https://github.com/search?utf8=%E2%9C%93&q="+keywords],
   //scanUrls,
     contentUrlRegexes: //["https://github\\.com/search\\?p=\\d+&q=distributed+file+system&type=Repositories&utf8=%E2%9C%93"],
-  ["https://github\\.com/\\w+/\\w+/graphs/contributors"],
+  ["https://github\\.com/\\S+/\\S+/graphs/contributors"],
   //[""],
-    enableProxy: true,
+    //enableProxy: true,
     //interval: 5000,
+  enableJS:true,
     fields: [
         {
-            name: "project_name",
-            selector: "//h1[@class='entry-title public ']/strong/a/@href",
-        required:true
+            name: "author_name",
+            selector: "//div[@class='container repohead-details-container']/ul/li[2]/a[2]/@href"
+        //required:true,
+          //repeated:true
           //repeated:true
         },
         {
             name: "create_time",
-            selector: "//h3[@class='js-date-range']",
-          required:true
+            selector: "//h3[@class='js-date-range']"
+          //required:true,
+          //repeated:true
         },
        {
-            name: "stars_name",
-            selector: "//div[@class='container repohead-details-container']/ul/li[2]/a[2]",
-            required: true,
-        repeated:true
+            name: "stars",
+            selector: "//div[@class='container repohead-details-container']/ul/li[2]/a[2]"
+           // required: true,
+        //repeated:true
         }
       /*
        
@@ -44,14 +53,79 @@ configs.onProcessScanPage = function(url, content, site){
         var page = currentPage + 1;  
         var nextUrl = url.replace("&p=" + currentPage, "&p=" + page);  
         site.addUrl(nextUrl);  
-    }  
-    return true;  */
+    }*/  
+  console.info("你好");
+   /*var urls = extractList(content, "//h3[@class='repo-list-name']/a/@href");
+  for (var i = 0; i < urls.length; i++) {
+        site.addUrl(urls[i]+"/graphs/contributors");
+    console.info(urls[i]);
+    }*/
+  site.addUrl(url);
+  return true;
+}
+configs.onProcessHelperUrl = function(url,content,site){
+  console.info("hello");
   var urls = extractList(content, "//h3[@class='repo-list-name']/a/@href");
   for (var i = 0; i < urls.length; i++) {
         site.addUrl(urls[i]+"/graphs/contributors");
-    //alert(urls[i]);
+    //console.info(urls[i]);
     }
-  return false;
-}  
+  var currentPage = parseInt(url.substring(url.indexOf("?p=") + 3));  
+    console.info(currentPage);
+        //如果没有到最后一页，则将页数加1  
+  var Page = currentPage + 1;  
+  var nextUrl = url.replace("?p=" + currentPage, "?p=" + Page);
+  console.info(nextUrl);
+  site.addUrl(nextUrl);  
+
+ return false;
+}
+configs.afterExtractField = function(fieldName, data, page) {
+    if (fieldName == "author_name") {
+        var result = /\S+\/\S+\//.exec(data);
+        if (result) {
+         var s="https://github.com/";
+          var ls=s.length;
+          var lss=result[0].length;
+            data = result[0].substr(ls,lss);
+        }
+    }
+    else if (fieldName == "create_time") {
+        var result = /\S+\ \S+,\ \S+\ \–/.exec(data);
+      if(!result){
+        return data;
+      }
+         var L1=result[0].indexOf(" ",0);
+         var L2=result[0].indexOf(", ",L1);
+         var L3=result[0].indexOf(" ",L2+2);
+         var Smon=result[0].substr(0,L1);
+         var day=result[0].substr(L1+1,L2-L1-1);
+         var year=result[0].substr(L2+2,L3-L2-2);
+         var mons=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dev"];
+         var mon;
+         var Sday;
+      var Sdata;
+         for(var i=1;i<13;i++){
+           if(Smon==mons[i-1]){
+             if(i<9){
+               mon="0"+i;
+             }else{
+               mon=""+i;
+             }
+           }
+          }
+         if(day<10){
+           Sday="0"+day;
+         }else{
+           Sday = day;
+         }
+         Sdata=year+mon+Sday;
+       
+       
+      }
+   return data;
+   
+}
+
 var crawler = new Crawler(configs);
 crawler.start();
